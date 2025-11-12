@@ -99,4 +99,6 @@ Use the provided sync scripts to install all 5 agents and 6 skills to your Claud
 
 ## License
 
-Private collection - not for distribution.
+MIT License - Copyright (c) 2025 Aaron Stannard <https://aaronstannard.com/>
+
+See [LICENSE](LICENSE) for full details.
