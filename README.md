@@ -40,6 +40,36 @@ These guides emphasize:
 
 These guides are designed to be used with AI-assisted development tools as knowledge bases for maintaining consistent coding standards across projects.
 
+### Syncing to Claude Code
+
+Use the provided sync scripts to copy agents and skills to your Claude Code global configuration directory (`~/.claude`):
+
+#### Linux/Mac
+```bash
+# Full sync
+./sync.sh
+
+# Dry run (see what would happen without making changes)
+./sync.sh --dry-run
+# or
+./sync.sh -n
+```
+
+#### Windows
+```powershell
+# Full sync
+.\sync.ps1
+
+# Dry run (see what would happen without making changes)
+.\sync.ps1 -DryRun
+```
+
+**Important Notes:**
+- Sync scripts create timestamped backups before making changes
+- Restart Claude Code after syncing to load new configurations
+- These are **global settings** - agents and skills will be available in all projects
+- Changes should be made in this repository, not in local `~/.claude` directories
+
 ## License
 
 Private collection - not for distribution.
