@@ -2,6 +2,27 @@
 
 A collection of comprehensive C# coding standards, best practices, and specialized knowledge for modern .NET development.
 
+> **Note:** Claude Code marketplace coming soon - these guides will be available for easy installation directly from Claude Code!
+
+## What's Included
+
+This repository contains **5 specialized agents** and **6 comprehensive skills** for C# and .NET development:
+
+**Agents:**
+- Akka.NET Specialist
+- .NET Concurrency Specialist
+- .NET Benchmark Designer
+- .NET Performance Analyst
+- DocFX Specialist
+
+**Skills:**
+- Modern C# Coding Standards (37KB)
+- Akka.NET Testing Patterns (38KB)
+- Akka.NET Aspire Configuration
+- .NET Aspire Integration Testing
+- Testcontainers Integration Tests
+- Playwright Blazor Testing
+
 ## Structure
 
 ### Skills (`/skills`)
@@ -42,7 +63,7 @@ These guides are designed to be used with AI-assisted development tools as knowl
 
 ### Syncing to Claude Code
 
-Use the provided sync scripts to copy agents and skills to your Claude Code global configuration directory (`~/.claude`):
+Use the provided sync scripts to install all 5 agents and 6 skills to your Claude Code global configuration directory (`~/.claude`):
 
 #### Linux/Mac
 ```bash
@@ -64,11 +85,17 @@ Use the provided sync scripts to copy agents and skills to your Claude Code glob
 .\sync.ps1 -DryRun
 ```
 
+**What Gets Synced:**
+- 5 specialized agents → `~/.claude/agents/`
+- 6 comprehensive skills → `~/.claude/skills/`
+- Timestamped backups created at `~/.csharp-guides-backup/[timestamp]`
+
 **Important Notes:**
 - Sync scripts create timestamped backups before making changes
 - Restart Claude Code after syncing to load new configurations
 - These are **global settings** - agents and skills will be available in all projects
 - Changes should be made in this repository, not in local `~/.claude` directories
+- Both scripts work cross-platform (tested on Linux, Mac, and Windows)
 
 ## License
 
