@@ -1,6 +1,6 @@
 # .NET Skills for Claude Code
 
-A Claude Code plugin marketplace with comprehensive skills and specialized agents for modern .NET development.
+A comprehensive Claude Code plugin with **25 skills** and **5 specialized agents** for professional .NET development. Battle-tested patterns from production systems covering C#, Akka.NET, Aspire, EF Core, testing, and performance optimization.
 
 ## Installation
 
@@ -8,90 +8,174 @@ A Claude Code plugin marketplace with comprehensive skills and specialized agent
 # Add the marketplace (one-time)
 /plugin marketplace add Aaronontheweb/dotnet-skills
 
-# Install the plugin (includes all skills and agents)
+# Install the plugin
 /plugin install dotnet-skills
 ```
 
-To update to the latest version:
+To update:
 ```bash
 /plugin marketplace update
 ```
 
-## What's Included
+---
 
-This plugin includes **5 specialized agents** and **9 comprehensive skills** for C# and .NET development.
+## Specialized Agents
 
-### Agents
+Agents are AI personas with deep domain expertise. They're invoked automatically when Claude Code detects relevant tasks.
 
 | Agent | Expertise |
 |-------|-----------|
-| **akka-net-specialist** | Akka.NET architecture, actor systems, distributed computing |
-| **dotnet-concurrency-specialist** | .NET concurrency, threading, race condition analysis |
-| **dotnet-benchmark-designer** | Designing effective .NET performance benchmarks |
-| **dotnet-performance-analyst** | Analyzing .NET performance data and profiling results |
-| **docfx-specialist** | DocFX documentation system and markdown formatting |
+| **akka-net-specialist** | Actor systems, clustering, persistence, Akka.Streams, message patterns |
+| **dotnet-concurrency-specialist** | Threading, async/await, race conditions, deadlock analysis |
+| **dotnet-benchmark-designer** | BenchmarkDotNet setup, custom benchmarks, measurement strategies |
+| **dotnet-performance-analyst** | Profiler analysis, benchmark interpretation, regression detection |
+| **docfx-specialist** | DocFX builds, API documentation, markdown linting |
 
-### Skills
+---
 
-#### Akka.NET (`skills/akka/`)
-- **best-practices** - EventStream vs DistributedPubSub, supervision strategies, error handling patterns
-- **testing-patterns** - Testing Akka.NET actors with Akka.Hosting.TestKit
-- **hosting-actor-patterns** - Props, IRequiredActor<T>, and dependency injection
-- **aspire-configuration** - Configuring Akka.NET with .NET Aspire
+## Skills Library
 
-#### .NET Aspire (`skills/aspire/`)
-- **integration-testing** - Testing strategies for .NET Aspire applications
+### Akka.NET
 
-#### C# (`skills/csharp/`)
-- **coding-standards** - Modern C# best practices: records, pattern matching, nullable types, Span<T>
+Production patterns for building distributed systems with Akka.NET.
 
-#### Testing (`skills/testing/`)
-- **testcontainers** - Using Testcontainers for .NET integration testing
-- **playwright-blazor** - End-to-end testing for Blazor with Playwright
+| Skill | What You'll Learn |
+|-------|-------------------|
+| **best-practices** | EventStream vs DistributedPubSub, supervision strategies, actor hierarchies |
+| **testing-patterns** | Akka.Hosting.TestKit, async assertions, TestProbe patterns |
+| **hosting-actor-patterns** | Props factories, `IRequiredActor<T>`, DI scope management in actors |
+| **aspire-configuration** | Akka.NET + .NET Aspire integration, HOCON with IConfiguration |
+| **management** | Akka.Management, health checks, cluster bootstrap |
 
-#### Meta (`skills/meta/`)
-- **marketplace-publishing** - How to contribute to this marketplace
+### C# Language
+
+Modern C# patterns for clean, performant code.
+
+| Skill | What You'll Learn |
+|-------|-------------------|
+| **coding-standards** | Records, pattern matching, nullable types, value objects, no AutoMapper |
+| **concurrency-patterns** | When to use Task vs Channel vs lock vs actors |
+| **api-design** | Extend-only design, API/wire compatibility, versioning strategies |
+| **type-design-performance** | Sealed classes, readonly structs, static pure functions, Span&lt;T&gt; |
+
+### Data Access
+
+Database patterns that scale.
+
+| Skill | What You'll Learn |
+|-------|-------------------|
+| **efcore-patterns** | Entity configuration, migrations, query optimization |
+| **database-performance** | Read/write separation, N+1 prevention, AsNoTracking, row limits |
+
+### .NET Aspire
+
+Cloud-native application orchestration.
+
+| Skill | What You'll Learn |
+|-------|-------------------|
+| **integration-testing** | DistributedApplicationTestingBuilder, Aspire.Hosting.Testing |
+| **service-defaults** | OpenTelemetry, health checks, resilience, service discovery |
+
+### ASP.NET Core
+
+Web application patterns.
+
+| Skill | What You'll Learn |
+|-------|-------------------|
+| **transactional-emails** | MJML templates, variable substitution, Mailpit testing |
+
+### .NET Ecosystem
+
+Core .NET development practices.
+
+| Skill | What You'll Learn |
+|-------|-------------------|
+| **project-structure** | Solution layout, Directory.Build.props, layered architecture |
+| **package-management** | Central Package Management (CPM), shared version variables, dotnet CLI |
+| **serialization** | Protobuf, MessagePack, System.Text.Json source generators, AOT |
+| **local-tools** | dotnet tool manifests, team-shared tooling |
+| **slopwatch** | Detect LLM-generated anti-patterns in your codebase |
+
+### Microsoft.Extensions
+
+Dependency injection and configuration patterns.
+
+| Skill | What You'll Learn |
+|-------|-------------------|
+| **configuration** | IOptions pattern, environment-specific config, secrets management |
+| **dependency-injection** | IServiceCollection extensions, scope management, keyed services |
+
+### Testing
+
+Comprehensive testing strategies.
+
+| Skill | What You'll Learn |
+|-------|-------------------|
+| **testcontainers** | Docker-based integration tests, PostgreSQL, Redis, RabbitMQ |
+| **playwright-blazor** | E2E testing for Blazor apps, page objects, async assertions |
+| **crap-analysis** | CRAP scores, coverage thresholds, ReportGenerator integration |
+| **snapshot-testing** | Verify library, approval testing, API response validation |
+
+---
+
+## Key Principles
+
+These skills emphasize patterns that work in production:
+
+- **Immutability by default** - Records, readonly structs, value objects
+- **Type safety** - Nullable reference types, strongly-typed IDs
+- **Composition over inheritance** - No abstract base classes, sealed by default
+- **Performance-aware** - Span&lt;T&gt;, pooling, deferred enumeration
+- **Testable** - DI everywhere, pure functions, explicit dependencies
+- **No magic** - No AutoMapper, no reflection-heavy frameworks
+
+---
 
 ## Repository Structure
 
 ```
 dotnet-skills/
 ├── .claude-plugin/
-│   ├── marketplace.json    # Marketplace catalog
-│   └── plugin.json         # Plugin metadata (version, skills, agents)
-├── skills/
-│   ├── akka/               # Akka.NET skills
-│   ├── aspire/             # .NET Aspire skills
-│   ├── csharp/             # C# language skills
-│   ├── testing/            # Testing framework skills
-│   └── meta/               # Meta skills
-├── agents/                 # Specialized agent definitions
-└── scripts/
-    └── validate-marketplace.sh
+│   └── plugin.json         # Plugin manifest
+├── agents/                 # 5 specialized agents
+│   ├── akka-net-specialist/
+│   ├── docfx-specialist/
+│   ├── dotnet-benchmark-designer/
+│   ├── dotnet-concurrency-specialist/
+│   └── dotnet-performance-analyst/
+└── skills/                 # 25 comprehensive skills
+    ├── akka/               # Akka.NET (5 skills)
+    ├── aspire/             # .NET Aspire (2 skills)
+    ├── aspnetcore/         # ASP.NET Core (1 skill)
+    ├── csharp/             # C# language (4 skills)
+    ├── data/               # Data access (2 skills)
+    ├── dotnet/             # .NET ecosystem (5 skills)
+    ├── microsoft-extensions/  # DI & config (2 skills)
+    └── testing/            # Testing (4 skills)
 ```
 
-## Key Principles
-
-These skills emphasize:
-
-- **Immutability by default** - Records and value objects
-- **Type safety** - Nullable reference types and strong typing
-- **Modern patterns** - Pattern matching, async/await everywhere
-- **Performance** - Zero-allocation patterns with Span<T>/Memory<T>
-- **Composition over inheritance** - Avoid abstract base classes
+---
 
 ## Contributing
 
-See `skills/meta/marketplace-publishing/SKILL.md` for the full workflow.
+Want to add a skill or agent? PRs welcome!
 
-**Quick start:**
-1. Create a skill folder: `skills/<category>/<skill-name>/SKILL.md`
+1. Create `skills/<category>/<skill-name>/SKILL.md` (or `agents/<name>/AGENT.md`)
 2. Add the path to `.claude-plugin/plugin.json`
-3. Run `./scripts/validate-marketplace.sh`
-4. Submit a PR
+3. Submit a PR
+
+Skills should be comprehensive reference documents (10-40KB) with concrete examples and anti-patterns.
+
+---
+
+## Author
+
+Created by [Aaron Stannard](https://aaronstannard.com/) ([@Aaronontheweb](https://github.com/Aaronontheweb))
+
+Patterns drawn from production systems including [Akka.NET](https://getakka.net/), [Petabridge](https://petabridge.com/), and [Sdkbin](https://sdkbin.com/).
 
 ## License
 
-MIT License - Copyright (c) 2025 Aaron Stannard <https://aaronstannard.com/>
+MIT License - Copyright (c) 2025 Aaron Stannard
 
 See [LICENSE](LICENSE) for full details.
