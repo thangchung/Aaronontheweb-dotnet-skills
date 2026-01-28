@@ -74,11 +74,11 @@ if [ "$agents_type" = "string" ]; then
         done
     fi
 elif [ "$agents_type" = "array" ]; then
-    # agents is an array of paths
+    # agents is an array of paths (with .md extension)
     while IFS= read -r source; do
         # Remove leading ./ if present
         clean_source="${source#./}"
-        file="$REPO_ROOT/${clean_source}.md"
+        file="$REPO_ROOT/${clean_source}"
 
         if [ ! -f "$file" ]; then
             echo -e "${RED}ERROR: Missing agent file: $file${NC}"
@@ -113,7 +113,7 @@ if [ "$agents_type" = "string" ]; then
 elif [ "$agents_type" = "array" ]; then
     for file in "$REPO_ROOT"/agents/*.md; do
         if [ -f "$file" ]; then
-            basename=$(basename "$file" .md)
+            basename=$(basename "$file")
             source="./agents/$basename"
             if ! jq -e --arg src "$source" '.agents[] | select(. == $src)' "$PLUGIN_JSON" > /dev/null 2>&1; then
                 echo -e "${YELLOW}WARNING: Agent file not in plugin.json: $basename${NC}"
