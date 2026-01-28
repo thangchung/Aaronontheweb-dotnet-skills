@@ -14,6 +14,7 @@
     "./skills/akka/aspire-configuration",
     "./skills/aspire/integration-testing",
     "./skills/csharp/coding-standards",
+    "./skills/data/efcore-patterns",
     "./skills/testing/testcontainers",
     "./skills/testing/playwright-blazor",
     "./skills/meta/marketplace-publishing"

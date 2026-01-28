@@ -61,7 +61,33 @@ Use this skill when:
 </ItemGroup>
 ```
 
-## Pattern 1: Basic Aspire Test Fixture
+## CRITICAL: File Watcher Fix for Integration Tests
+
+When running many integration tests that each start an IHost, the default .NET host builder enables file watchers for configuration reload. This exhausts file descriptor limits on Linux.
+
+**Add this to your test project before any tests run:**
+
+```csharp
+// TestEnvironmentInitializer.cs
+using System.Runtime.CompilerServices;
+
+namespace YourApp.Tests;
+
+internal static class TestEnvironmentInitializer
+{
+    [ModuleInitializer]
+    internal static void Initialize()
+    {
+        // Disable config file watching in test hosts
+        // Prevents file descriptor exhaustion (inotify watch limit) on Linux
+        Environment.SetEnvironmentVariable("DOTNET_HOSTBUILDER__RELOADCONFIGONCHANGE", "false");
+    }
+}
+```
+
+**Why this matters:** `[ModuleInitializer]` runs before any test code executes, setting the environment variable globally for all IHost instances created during tests.
+
+## Pattern 1: Basic Aspire Test Fixture (Modern API)
 
 ```csharp
 using Aspire.Hosting;
@@ -76,19 +102,29 @@ public sealed class AspireAppFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        // Build the AppHost
-        var appHost = await DistributedApplicationTestingBuilder
-            .CreateAsync<Projects.YourApp_AppHost>();
+        // Pass configuration overrides as command-line args (cleaner than Configuration dictionary)
+        var builder = await DistributedApplicationTestingBuilder
+            .CreateAsync<Projects.YourApp_AppHost>([
+                "YourApp:UseVolumes=false",           // No persistence - clean slate each test
+                "YourApp:Environment=IntegrationTest",
+                "YourApp:Replicas=1"                  // Single instance for tests
+            ]);
 
-        // Optionally configure test-specific settings
-        appHost.Services.ConfigureHttpClientDefaults(b =>
-        {
-            b.AddStandardResilienceHandler();
-        });
+        _app = await builder.BuildAsync();
 
-        // Build and start the distributed application
-        _app = await appHost.BuildAsync();
-        await _app.StartAsync();
+        // Phase 1: Start the application (container startup)
+        using var startupCts = new CancellationTokenSource(TimeSpan.FromMinutes(10));
+        await _app.StartAsync(startupCts.Token);
+
+        // Phase 2: Wait for services to become healthy (use built-in API)
+        using var healthCts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
+        await _app.ResourceNotifications.WaitForResourceHealthyAsync("api", healthCts.Token);
+    }
+
+    public Uri GetEndpoint(string resourceName, string scheme = "https")
+    {
+        return _app?.GetEndpoint(resourceName, scheme)
+            ?? throw new InvalidOperationException($"Endpoint for '{resourceName}' not found");
     }
 
     public async Task DisposeAsync()
@@ -288,33 +324,120 @@ public class UIIntegrationTests
 }
 ```
 
-## Pattern 6: Configuration Override for Tests
+## Pattern 6: Conditional Volume Configuration in AppHost
+
+Design your AppHost to support test scenarios by making volumes optional:
 
 ```csharp
-public sealed class AspireAppFixture : IAsyncLifetime
+// In your AppHost Program.cs
+public class AppConfiguration
 {
+    /// <summary>
+    /// Whether to use persistent volumes for databases.
+    /// Defaults to false - tests get a clean database each run.
+    /// </summary>
+    public bool UseVolumes { get; set; } = false;
+
+    public string Environment { get; set; } = "Development";
+    public int Replicas { get; set; } = 1;
+}
+
+var builder = DistributedApplication.CreateBuilder(args);
+
+// Bind configuration from command-line args or appsettings
+var config = builder.Configuration.GetSection("YourApp")
+    .Get<AppConfiguration>() ?? new AppConfiguration();
+
+var postgres = builder.AddPostgres("postgres").WithPgAdmin();
+
+// Only persist data when explicitly enabled (not during tests)
+if (config.UseVolumes)
+{
+    postgres.WithDataVolume();
+}
+
+var db = postgres.AddDatabase("appdb");
+
+// Migrations run first
+var migrations = builder.AddProject<Projects.YourApp_Migrations>("migrations")
+    .WaitFor(db)
+    .WithReference(db);
+
+// API waits for migrations to complete
+var api = builder.AddProject<Projects.YourApp_Api>("api")
+    .WaitForCompletion(migrations)
+    .WithReference(db);
+```
+
+**Then in tests, pass `UseVolumes=false`:**
+
+```csharp
+var builder = await DistributedApplicationTestingBuilder
+    .CreateAsync<Projects.YourApp_AppHost>([
+        "YourApp:UseVolumes=false"  // Clean database each test run
+    ]);
+```
+
+## Pattern 7: Database Reset with Respawn
+
+For tests that modify data, use [Respawn](https://github.com/jbogard/Respawn) to reset between tests:
+
+```csharp
+using Respawn;
+
+public class AspireFixtureWithReset : IAsyncLifetime
+{
+    private DistributedApplication? _app;
+    private Respawner? _respawner;
+    private string? _connectionString;
+
     public async Task InitializeAsync()
     {
-        var appHost = await DistributedApplicationTestingBuilder
-            .CreateAsync<Projects.YourApp_AppHost>();
+        var builder = await DistributedApplicationTestingBuilder
+            .CreateAsync<Projects.YourApp_AppHost>([
+                "YourApp:UseVolumes=false"
+            ]);
 
-        // Override configuration for testing
-        appHost.Configuration["YourApp:TestMode"] = "true";
-        appHost.Configuration["YourApp:UseInMemoryDatabase"] = "false";
-
-        // Add test-specific services
-        appHost.Services.AddSingleton<ITestDataSeeder, TestDataSeeder>();
-
-        _app = await appHost.BuildAsync();
-
-        // Seed test data before starting
-        var seeder = appHost.Services
-            .GetRequiredService<ITestDataSeeder>();
-        await seeder.SeedAsync();
-
+        _app = await builder.BuildAsync();
         await _app.StartAsync();
+
+        // Wait for database and migrations
+        await _app.ResourceNotifications.WaitForResourceHealthyAsync("api");
+
+        // Get connection string and create respawner
+        var dbResource = _app.GetResource("appdb");
+        _connectionString = await dbResource.GetConnectionStringAsync();
+
+        _respawner = await Respawner.CreateAsync(_connectionString, new RespawnerOptions
+        {
+            TablesToIgnore = new[]
+            {
+                "__EFMigrationsHistory",
+                "schema_version",        // DbUp
+                "AspNetRoles"            // Seeded reference data
+            },
+            DbAdapter = DbAdapter.Postgres
+        });
+    }
+
+    /// <summary>
+    /// Reset database to clean state between tests.
+    /// </summary>
+    public async Task ResetDatabaseAsync()
+    {
+        if (_respawner is not null && _connectionString is not null)
+        {
+            await _respawner.ResetAsync(_connectionString);
+        }
+    }
+
+    public async Task DisposeAsync()
+    {
+        if (_app is not null)
+            await _app.DisposeAsync();
     }
 }
+```
 ```
 
 ## Pattern 7: Waiting for Resource Readiness
@@ -587,10 +710,73 @@ public async Task InitializeAsync()
 }
 ```
 
+## Aspire CLI and MCP Integration
+
+Aspire 13.1+ includes MCP (Model Context Protocol) integration for AI coding assistants like Claude Code. This allows AI tools to query application state, view logs, and inspect traces.
+
+### Installing the Aspire CLI
+
+```bash
+# Install the Aspire CLI globally
+dotnet tool install -g aspire.cli
+
+# Or update existing installation
+dotnet tool update -g aspire.cli
+```
+
+### Initializing MCP for Claude Code
+
+```bash
+# Navigate to your Aspire project
+cd src/MyApp.AppHost
+
+# Initialize MCP configuration (auto-detects Claude Code)
+aspire mcp init
+```
+
+This creates the necessary configuration files for Claude Code to connect to your running Aspire application.
+
+### Running with MCP Enabled
+
+```bash
+# Run your Aspire app with MCP server
+aspire run
+
+# The CLI will output the MCP endpoint URL
+# Claude Code can then connect and query:
+# - Resource states and health status
+# - Real-time console logs
+# - Distributed traces
+# - Available Aspire integrations
+```
+
+### MCP Capabilities
+
+When connected, AI assistants can:
+- **Query resources** - Get resource states, endpoints, health status
+- **Debug with logs** - Access real-time console output from all services
+- **Investigate telemetry** - View structured logs and distributed traces
+- **Execute commands** - Run resource-specific commands
+- **Discover integrations** - List available Aspire hosting integrations (Redis, PostgreSQL, Azure services)
+
+### Benefits for Development
+
+- AI assistants can see your actual running application state
+- Debugging assistance uses real telemetry data
+- No need for manual log copying/pasting
+- AI can help correlate distributed trace spans
+
+For more details, see:
+- [Aspire MCP Configuration](https://aspire.dev/get-started/configure-mcp/)
+- [Aspire CLI Commands](https://aspire.dev/reference/cli/commands/aspire-mcp-init/)
+
+---
+
 ## Debugging Tips
 
 1. **Run Aspire Dashboard** - When tests fail, check the dashboard at `http://localhost:15888`
-2. **Enable detailed logging** - Set `ASPIRE_ALLOW_UNSECURED_TRANSPORT=true` for more verbose output
-3. **Check container logs** - Use `docker logs` to inspect container output
-4. **Use breakpoints in fixtures** - Debug fixture initialization to catch startup issues
-5. **Verify resource names** - Ensure resource names match between AppHost and tests
+2. **Use Aspire CLI with MCP** - Let AI assistants query real application state
+3. **Enable detailed logging** - Set `ASPIRE_ALLOW_UNSECURED_TRANSPORT=true` for more verbose output
+4. **Check container logs** - Use `docker logs` to inspect container output
+5. **Use breakpoints in fixtures** - Debug fixture initialization to catch startup issues
+6. **Verify resource names** - Ensure resource names match between AppHost and tests

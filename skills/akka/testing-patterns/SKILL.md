@@ -90,6 +90,38 @@ Traditional TestKit patterns are covered briefly at the end of this document.
 
 ---
 
+## CRITICAL: File Watcher Fix for Test Projects
+
+Akka.Hosting.TestKit spins up real `IHost` instances, which by default enable file watchers for configuration reload. When running many tests, this exhausts file descriptor limits on Linux (inotify watch limit).
+
+**Add this to your test project - it runs before any tests execute:**
+
+```csharp
+// TestEnvironmentInitializer.cs
+using System.Runtime.CompilerServices;
+
+namespace YourApp.Tests;
+
+internal static class TestEnvironmentInitializer
+{
+    [ModuleInitializer]
+    internal static void Initialize()
+    {
+        // Disable config file watching in test hosts
+        // Prevents file descriptor exhaustion (inotify watch limit) on Linux
+        Environment.SetEnvironmentVariable("DOTNET_HOSTBUILDER__RELOADCONFIGONCHANGE", "false");
+    }
+}
+```
+
+**Why this matters:**
+- `[ModuleInitializer]` runs automatically before any test code
+- Sets the environment variable globally for all `IHost` instances
+- Prevents cryptic `inotify` errors when running 100+ tests
+- Also applies to Aspire integration tests that use `IHost`
+
+---
+
 ## Pattern 1: Basic Actor Test with Akka.Hosting.TestKit
 
 ```csharp
