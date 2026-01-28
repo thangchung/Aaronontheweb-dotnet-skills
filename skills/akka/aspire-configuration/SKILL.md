@@ -15,13 +15,21 @@ Use this skill when:
 - Configuring multi-replica actor systems in local development
 - Deploying Akka.NET applications to Kubernetes with Aspire
 
+## Related Skills
+
+- **`akka-net-management`** - Deep dive into Akka.Management, Cluster Bootstrap, and discovery providers (Kubernetes, Azure, Config)
+- **`microsoft-extensions-configuration`** - IValidateOptions patterns for configuration validation
+- **`akka-net-best-practices`** - Cluster/local mode abstractions for testable actor systems
+- **`aspire-integration-testing`** - Testing Aspire applications with real infrastructure
+
 ## Core Principles
 
-1. **Configuration via Microsoft.Extensions.Configuration** - Use strongly-typed settings classes bound from appsettings.json
+1. **Configuration via Microsoft.Extensions.Configuration** - Use strongly-typed settings classes bound from appsettings.json (see `microsoft-extensions-configuration` skill)
 2. **Akka.Hosting for DI Integration** - Use the Akka.Hosting library for seamless ASP.NET Core integration
 3. **Aspire for Orchestration** - Let Aspire manage service dependencies, networking, and environment configuration
 4. **Health Checks** - Always configure health checks for clustering, persistence, and readiness
 5. **Separate Concerns** - Keep actor definitions, configuration, and Aspire orchestration in separate layers
+6. **Validate Configuration at Startup** - Use `IValidateOptions<T>` and `.ValidateOnStart()` to fail fast on misconfiguration
 
 ## Project Structure
 

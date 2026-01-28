@@ -1,104 +1,181 @@
-# C# Coding Guides
+# .NET Skills for Claude Code
 
-A collection of comprehensive C# coding standards, best practices, and specialized knowledge for modern .NET development.
+A comprehensive Claude Code plugin with **25 skills** and **5 specialized agents** for professional .NET development. Battle-tested patterns from production systems covering C#, Akka.NET, Aspire, EF Core, testing, and performance optimization.
 
-> **Note:** Claude Code marketplace coming soon - these guides will be available for easy installation directly from Claude Code!
+## Installation
 
-## What's Included
+```bash
+# Add the marketplace (one-time)
+/plugin marketplace add Aaronontheweb/dotnet-skills
 
-This repository contains **5 specialized agents** and **6 comprehensive skills** for C# and .NET development:
+# Install the plugin
+/plugin install dotnet-skills
+```
 
-**Agents:**
-- Akka.NET Specialist
-- .NET Concurrency Specialist
-- .NET Benchmark Designer
-- .NET Performance Analyst
-- DocFX Specialist
+To update:
+```bash
+/plugin marketplace update
+```
 
-**Skills:**
-- Modern C# Coding Standards (37KB)
-- Akka.NET Testing Patterns (38KB)
-- Akka.NET Aspire Configuration
-- .NET Aspire Integration Testing
-- Testcontainers Integration Tests
-- Playwright Blazor Testing
+---
 
-## Structure
+## Specialized Agents
 
-### Skills (`/skills`)
+Agents are AI personas with deep domain expertise. They're invoked automatically when Claude Code detects relevant tasks.
 
-Detailed guides and patterns for specific C# and .NET technologies:
+| Agent | Expertise |
+|-------|-----------|
+| **akka-net-specialist** | Actor systems, clustering, persistence, Akka.Streams, message patterns |
+| **dotnet-concurrency-specialist** | Threading, async/await, race conditions, deadlock analysis |
+| **dotnet-benchmark-designer** | BenchmarkDotNet setup, custom benchmarks, measurement strategies |
+| **dotnet-performance-analyst** | Profiler analysis, benchmark interpretation, regression detection |
+| **docfx-specialist** | DocFX builds, API documentation, markdown linting |
 
-- **modern-csharp-coding-standards.md** - Comprehensive modern C# best practices including records, pattern matching, value objects, async/await, Span<T>/Memory<T>, and API design
-- **akka-net-testing-patterns.md** - Complete guide to testing Akka.NET actors using Akka.Hosting.TestKit
-- **akka-net-aspire-configuration.md** - Patterns for configuring Akka.NET with .NET Aspire
-- **aspire-integration-testing.md** - Testing strategies for .NET Aspire applications
-- **testcontainers-integration-tests.md** - Using Testcontainers for integration testing in .NET
-- **playwright-blazor-testing.md** - End-to-end testing for Blazor applications with Playwright
+---
 
-### Agents (`/agents`)
+## Skills Library
 
-Specialized agent configurations for domain-specific expertise:
+### Akka.NET
 
-- **akka-net-specialist.md** - Expert in Akka.NET architecture, actor systems, and distributed computing
-- **dotnet-concurrency-specialist.md** - Expert in .NET concurrency, threading, and race condition analysis
-- **dotnet-benchmark-designer.md** - Expert in designing effective .NET performance benchmarks
-- **dotnet-performance-analyst.md** - Expert in analyzing .NET application performance data
-- **docfx-specialist.md** - Expert in DocFX documentation system and markdown formatting
+Production patterns for building distributed systems with Akka.NET.
+
+| Skill | What You'll Learn |
+|-------|-------------------|
+| **best-practices** | EventStream vs DistributedPubSub, supervision strategies, actor hierarchies |
+| **testing-patterns** | Akka.Hosting.TestKit, async assertions, TestProbe patterns |
+| **hosting-actor-patterns** | Props factories, `IRequiredActor<T>`, DI scope management in actors |
+| **aspire-configuration** | Akka.NET + .NET Aspire integration, HOCON with IConfiguration |
+| **management** | Akka.Management, health checks, cluster bootstrap |
+
+### C# Language
+
+Modern C# patterns for clean, performant code.
+
+| Skill | What You'll Learn |
+|-------|-------------------|
+| **coding-standards** | Records, pattern matching, nullable types, value objects, no AutoMapper |
+| **concurrency-patterns** | When to use Task vs Channel vs lock vs actors |
+| **api-design** | Extend-only design, API/wire compatibility, versioning strategies |
+| **type-design-performance** | Sealed classes, readonly structs, static pure functions, Span&lt;T&gt; |
+
+### Data Access
+
+Database patterns that scale.
+
+| Skill | What You'll Learn |
+|-------|-------------------|
+| **efcore-patterns** | Entity configuration, migrations, query optimization |
+| **database-performance** | Read/write separation, N+1 prevention, AsNoTracking, row limits |
+
+### .NET Aspire
+
+Cloud-native application orchestration.
+
+| Skill | What You'll Learn |
+|-------|-------------------|
+| **integration-testing** | DistributedApplicationTestingBuilder, Aspire.Hosting.Testing |
+| **service-defaults** | OpenTelemetry, health checks, resilience, service discovery |
+
+### ASP.NET Core
+
+Web application patterns.
+
+| Skill | What You'll Learn |
+|-------|-------------------|
+| **transactional-emails** | MJML templates, variable substitution, Mailpit testing |
+
+### .NET Ecosystem
+
+Core .NET development practices.
+
+| Skill | What You'll Learn |
+|-------|-------------------|
+| **project-structure** | Solution layout, Directory.Build.props, layered architecture |
+| **package-management** | Central Package Management (CPM), shared version variables, dotnet CLI |
+| **serialization** | Protobuf, MessagePack, System.Text.Json source generators, AOT |
+| **local-tools** | dotnet tool manifests, team-shared tooling |
+| **slopwatch** | Detect LLM-generated anti-patterns in your codebase |
+
+### Microsoft.Extensions
+
+Dependency injection and configuration patterns.
+
+| Skill | What You'll Learn |
+|-------|-------------------|
+| **configuration** | IOptions pattern, environment-specific config, secrets management |
+| **dependency-injection** | IServiceCollection extensions, scope management, keyed services |
+
+### Testing
+
+Comprehensive testing strategies.
+
+| Skill | What You'll Learn |
+|-------|-------------------|
+| **testcontainers** | Docker-based integration tests, PostgreSQL, Redis, RabbitMQ |
+| **playwright-blazor** | E2E testing for Blazor apps, page objects, async assertions |
+| **crap-analysis** | CRAP scores, coverage thresholds, ReportGenerator integration |
+| **snapshot-testing** | Verify library, approval testing, API response validation |
+
+---
 
 ## Key Principles
 
-These guides emphasize:
+These skills emphasize patterns that work in production:
 
-- **Immutability by default** - Records and value objects
-- **Type safety** - Nullable reference types and strong typing
-- **Modern patterns** - Pattern matching, async/await everywhere
-- **Performance** - Zero-allocation patterns with Span<T>/Memory<T>
-- **Composition over inheritance** - Avoid abstract base classes
-- **Best-practice API design** - Accept abstractions, return appropriately specific types
+- **Immutability by default** - Records, readonly structs, value objects
+- **Type safety** - Nullable reference types, strongly-typed IDs
+- **Composition over inheritance** - No abstract base classes, sealed by default
+- **Performance-aware** - Span&lt;T&gt;, pooling, deferred enumeration
+- **Testable** - DI everywhere, pure functions, explicit dependencies
+- **No magic** - No AutoMapper, no reflection-heavy frameworks
 
-## Usage
+---
 
-These guides are designed to be used with AI-assisted development tools as knowledge bases for maintaining consistent coding standards across projects.
+## Repository Structure
 
-### Syncing to Claude Code
-
-Use the provided sync scripts to install all 5 agents and 6 skills to your Claude Code global configuration directory (`~/.claude`):
-
-#### Linux/Mac
-```bash
-# Full sync
-./sync.sh
-
-# Dry run (see what would happen without making changes)
-./sync.sh --dry-run
-# or
-./sync.sh -n
+```
+dotnet-skills/
+├── .claude-plugin/
+│   └── plugin.json         # Plugin manifest
+├── agents/                 # 5 specialized agents
+│   ├── akka-net-specialist/
+│   ├── docfx-specialist/
+│   ├── dotnet-benchmark-designer/
+│   ├── dotnet-concurrency-specialist/
+│   └── dotnet-performance-analyst/
+└── skills/                 # 25 comprehensive skills
+    ├── akka/               # Akka.NET (5 skills)
+    ├── aspire/             # .NET Aspire (2 skills)
+    ├── aspnetcore/         # ASP.NET Core (1 skill)
+    ├── csharp/             # C# language (4 skills)
+    ├── data/               # Data access (2 skills)
+    ├── dotnet/             # .NET ecosystem (5 skills)
+    ├── microsoft-extensions/  # DI & config (2 skills)
+    └── testing/            # Testing (4 skills)
 ```
 
-#### Windows
-```powershell
-# Full sync
-.\sync.ps1
+---
 
-# Dry run (see what would happen without making changes)
-.\sync.ps1 -DryRun
-```
+## Contributing
 
-**What Gets Synced:**
-- 5 specialized agents → `~/.claude/agents/`
-- 6 comprehensive skills → `~/.claude/skills/`
-- Timestamped backups created at `~/.csharp-guides-backup/[timestamp]`
+Want to add a skill or agent? PRs welcome!
 
-**Important Notes:**
-- Sync scripts create timestamped backups before making changes
-- Restart Claude Code after syncing to load new configurations
-- These are **global settings** - agents and skills will be available in all projects
-- Changes should be made in this repository, not in local `~/.claude` directories
-- Both scripts work cross-platform (tested on Linux, Mac, and Windows)
+1. Create `skills/<category>/<skill-name>/SKILL.md` (or `agents/<name>/AGENT.md`)
+2. Add the path to `.claude-plugin/plugin.json`
+3. Submit a PR
+
+Skills should be comprehensive reference documents (10-40KB) with concrete examples and anti-patterns.
+
+---
+
+## Author
+
+Created by [Aaron Stannard](https://aaronstannard.com/) ([@Aaronontheweb](https://github.com/Aaronontheweb))
+
+Patterns drawn from production systems including [Akka.NET](https://getakka.net/), [Petabridge](https://petabridge.com/), and [Sdkbin](https://sdkbin.com/).
 
 ## License
 
-MIT License - Copyright (c) 2025 Aaron Stannard <https://aaronstannard.com/>
+MIT License - Copyright (c) 2025 Aaron Stannard
 
 See [LICENSE](LICENSE) for full details.

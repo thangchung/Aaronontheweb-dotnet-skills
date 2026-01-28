@@ -689,13 +689,162 @@ jobs:
       run: docker container prune -f
 ```
 
+## Pattern 8: Database Reset with Respawn
+
+When reusing containers across tests, use [Respawn](https://github.com/jbogard/Respawn) to reset database state between tests instead of recreating containers:
+
+```xml
+<PackageReference Include="Respawn" Version="*" />
+```
+
+### Basic Respawn Setup
+
+```csharp
+using Respawn;
+
+public class DatabaseFixture : IAsyncLifetime
+{
+    private readonly TestcontainersContainer _container;
+    private Respawner _respawner = null!;
+    public NpgsqlConnection Connection { get; private set; } = null!;
+    public string ConnectionString { get; private set; } = null!;
+
+    public async Task InitializeAsync()
+    {
+        await _container.StartAsync();
+
+        var port = _container.GetMappedPublicPort(5432);
+        ConnectionString = $"Host=localhost;Port={port};Database=testdb;Username=postgres;Password=postgres";
+
+        Connection = new NpgsqlConnection(ConnectionString);
+        await Connection.OpenAsync();
+
+        // Run migrations first
+        await RunMigrationsAsync();
+
+        // Create respawner after schema exists
+        _respawner = await Respawner.CreateAsync(ConnectionString, new RespawnerOptions
+        {
+            TablesToIgnore = new Table[]
+            {
+                "__EFMigrationsHistory",  // EF Core migrations table
+                "AspNetRoles",            // Identity roles (seeded data)
+                "schema_version"          // DbUp/Flyway version table
+            },
+            DbAdapter = DbAdapter.Postgres
+        });
+    }
+
+    /// <summary>
+    /// Reset database to clean state. Call this in test setup or between tests.
+    /// </summary>
+    public async Task ResetDatabaseAsync()
+    {
+        await _respawner.ResetAsync(ConnectionString);
+    }
+
+    public async Task DisposeAsync()
+    {
+        await Connection.DisposeAsync();
+        await _container.DisposeAsync();
+    }
+}
+```
+
+### Using Respawn in Tests
+
+```csharp
+[Collection("Database collection")]
+public class OrderTests : IAsyncLifetime
+{
+    private readonly DatabaseFixture _fixture;
+
+    public OrderTests(DatabaseFixture fixture)
+    {
+        _fixture = fixture;
+    }
+
+    public async Task InitializeAsync()
+    {
+        // Reset database before each test
+        await _fixture.ResetDatabaseAsync();
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
+    [Fact]
+    public async Task CreateOrder_ShouldPersist()
+    {
+        // Database is clean - no leftover data from other tests
+        await _fixture.Connection.ExecuteAsync(
+            "INSERT INTO orders (customer_id, total) VALUES (@CustomerId, @Total)",
+            new { CustomerId = "CUST1", Total = 100.00m });
+
+        var count = await _fixture.Connection.QuerySingleAsync<int>(
+            "SELECT COUNT(*) FROM orders");
+
+        Assert.Equal(1, count);
+    }
+
+    [Fact]
+    public async Task AnotherTest_StartsWithCleanDatabase()
+    {
+        // This test also starts with empty tables
+        var count = await _fixture.Connection.QuerySingleAsync<int>(
+            "SELECT COUNT(*) FROM orders");
+
+        Assert.Equal(0, count); // Clean slate!
+    }
+}
+```
+
+### Respawn Options
+
+```csharp
+var respawner = await Respawner.CreateAsync(connectionString, new RespawnerOptions
+{
+    // Tables to preserve (reference data, migrations history)
+    TablesToIgnore = new Table[]
+    {
+        "__EFMigrationsHistory",
+        new Table("public", "lookup_data"),  // Schema-qualified
+    },
+
+    // Schemas to clean (default: all schemas)
+    SchemasToInclude = new[] { "public", "app" },
+
+    // Or exclude specific schemas
+    SchemasToExclude = new[] { "audit", "logging" },
+
+    // Database adapter
+    DbAdapter = DbAdapter.Postgres,  // or SqlServer, MySql
+
+    // Handle circular foreign keys
+    WithReseed = true  // Reset identity columns (SQL Server)
+});
+```
+
+### Why Respawn Over Container Recreation
+
+| Approach | Pros | Cons |
+|----------|------|------|
+| **New container per test** | Complete isolation | Slow (10-30s per container) |
+| **Respawn** | Fast (~50ms), preserves schema/migrations | Requires careful table exclusion |
+| **Transaction rollback** | Fastest | Can't test commit behavior |
+
+**Use Respawn when:**
+- Tests share a container via xUnit collection fixture
+- You need to test actual commits (not just rollbacks)
+- Container startup time is a bottleneck
+
 ## Performance Tips
 
 1. **Reuse containers** - Share fixtures across tests in a collection
-2. **Parallel execution** - TestContainers handles port conflicts automatically
-3. **Use lightweight images** - Alpine versions are smaller and faster
-4. **Cache images** - Docker will cache pulled images locally
-5. **Limit container resources** - Set CPU/memory limits if needed:
+2. **Use Respawn** - Reset data without recreating containers
+3. **Parallel execution** - TestContainers handles port conflicts automatically
+4. **Use lightweight images** - Alpine versions are smaller and faster
+5. **Cache images** - Docker will cache pulled images locally
+6. **Limit container resources** - Set CPU/memory limits if needed:
 
 ```csharp
 .WithResourceMapping(new CpuCount(2))

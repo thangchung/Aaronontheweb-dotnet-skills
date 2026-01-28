@@ -1,7 +1,7 @@
 ---
 name: akka-net-specialist
 description: Expert in Akka.NET architecture, actor systems, and distributed computing patterns. Specializes in analyzing actor lifecycle issues, message passing problems, cluster coordination, persistence, and stream processing. Use for Akka.NET-specific debugging, architecture decisions, and understanding actor system behavior.
-model: sonnet
+model: opus
 color: purple
 ---
 

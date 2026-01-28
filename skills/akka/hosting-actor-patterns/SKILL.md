@@ -400,6 +400,114 @@ public class OrderService
 }
 ```
 
+## DI Scope Management in Actors
+
+**Actors don't have automatic DI scopes.** Unlike ASP.NET controllers (where each HTTP request creates a scope), actors are long-lived. If you need scoped services (like `DbContext`), inject `IServiceProvider` and create scopes manually.
+
+### Pattern: Scope Per Message
+
+```csharp
+public sealed class OrderProcessingActor : ReceiveActor
+{
+    private readonly IServiceProvider _serviceProvider;
+    private readonly IActorRef _notificationActor;
+
+    public OrderProcessingActor(
+        IServiceProvider serviceProvider,
+        IRequiredActor<NotificationActor> notificationActor)
+    {
+        _serviceProvider = serviceProvider;
+        _notificationActor = notificationActor.ActorRef;
+
+        ReceiveAsync<ProcessOrder>(HandleProcessOrder);
+    }
+
+    private async Task HandleProcessOrder(ProcessOrder msg)
+    {
+        // Create scope for this message - disposed after processing
+        using var scope = _serviceProvider.CreateScope();
+
+        // Resolve scoped services within the scope
+        var orderRepository = scope.ServiceProvider.GetRequiredService<IOrderRepository>();
+        var paymentService = scope.ServiceProvider.GetRequiredService<IPaymentService>();
+        var emailComposer = scope.ServiceProvider.GetRequiredService<IOrderEmailComposer>();
+
+        // Do work with scoped services
+        var order = await orderRepository.GetByIdAsync(msg.OrderId);
+        var payment = await paymentService.ProcessAsync(order);
+
+        // DbContext changes committed when scope disposes
+    }
+}
+```
+
+### Why This Pattern
+
+| Benefit | Explanation |
+|---------|-------------|
+| **Fresh DbContext per message** | No stale entity tracking between messages |
+| **Proper disposal** | Database connections released after each message |
+| **Isolation** | One message's errors don't corrupt another's state |
+| **Testable** | Can inject mock IServiceProvider in tests |
+
+### Singleton Services - Direct Injection
+
+For stateless, thread-safe services, inject directly (no scope needed):
+
+```csharp
+public sealed class NotificationActor : ReceiveActor
+{
+    private readonly IEmailLinkGenerator _linkGenerator;  // Singleton - OK!
+    private readonly IMjmlTemplateRenderer _renderer;     // Singleton - OK!
+
+    public NotificationActor(
+        IEmailLinkGenerator linkGenerator,
+        IMjmlTemplateRenderer renderer)
+    {
+        _linkGenerator = linkGenerator;
+        _renderer = renderer;
+
+        Receive<SendWelcomeEmail>(Handle);
+    }
+}
+```
+
+### Common Mistake: Injecting Scoped Services Directly
+
+```csharp
+// BAD: Scoped service injected into long-lived actor
+public sealed class BadActor : ReceiveActor
+{
+    private readonly IOrderRepository _repo;  // Scoped! DbContext lives forever!
+
+    public BadActor(IOrderRepository repo)  // Captured at actor creation
+    {
+        _repo = repo;  // This DbContext will become stale
+    }
+}
+
+// GOOD: Inject IServiceProvider, create scope per message
+public sealed class GoodActor : ReceiveActor
+{
+    private readonly IServiceProvider _sp;
+
+    public GoodActor(IServiceProvider sp)
+    {
+        _sp = sp;
+        ReceiveAsync<ProcessOrder>(async msg =>
+        {
+            using var scope = _sp.CreateScope();
+            var repo = scope.ServiceProvider.GetRequiredService<IOrderRepository>();
+            // Fresh DbContext for this message
+        });
+    }
+}
+```
+
+For more on DI lifetimes and scope management, see `microsoft-extensions/dependency-injection` skill.
+
+---
+
 ## Best Practices
 
 1. **Always support both execution modes** - Makes testing easy without code changes
